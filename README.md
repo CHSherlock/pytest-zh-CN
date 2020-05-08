@@ -35,8 +35,8 @@
     * [禁用插件](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E4%BD%BF%E7%94%A8%E5%92%8C%E8%B0%83%E7%94%A8.md#%E5%88%9B%E5%BB%BAresultlog%E6%A0%BC%E5%BC%8F%E7%9A%84%E6%96%87%E4%BB%B6)
     * [从Python代码中调用pytest](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E4%BD%BF%E7%94%A8%E5%92%8C%E8%B0%83%E7%94%A8.md#%E5%88%9B%E5%BB%BAresultlog%E6%A0%BC%E5%BC%8F%E7%9A%84%E6%96%87%E4%BB%B6)
 
-* #### [将pytest与现有测试套件一起使用](https://docs.pytest.org/en/latest/existingtestsuite.html)
-    * [使用pytest运行现有的测试套件](https://docs.pytest.org/en/latest/existingtestsuite.html#running-an-existing-test-suite-with-pytest)
+* #### [将pytest与现有测试套件一起使用](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E5%B0%86pytest%E4%B8%8E%E7%8E%B0%E6%9C%89%E6%B5%8B%E8%AF%95%E5%A5%97%E4%BB%B6%E4%B8%80%E8%B5%B7%E4%BD%BF%E7%94%A8.md)
+    * [使用pytest运行现有的测试套件](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E5%B0%86pytest%E4%B8%8E%E7%8E%B0%E6%9C%89%E6%B5%8B%E8%AF%95%E5%A5%97%E4%BB%B6%E4%B8%80%E8%B5%B7%E4%BD%BF%E7%94%A8.md#%E4%BD%BF%E7%94%A8pytest%E8%BF%90%E8%A1%8C%E7%8E%B0%E6%9C%89%E7%9A%84%E6%B5%8B%E8%AF%95%E5%A5%97%E4%BB%B6)
 
 * #### [测试中断言的编写和报告](https://docs.pytest.org/en/latest/assert.html)
     * [使用assert语句进行断言](https://docs.pytest.org/en/latest/assert.html#asserting-with-the-assert-statement)
