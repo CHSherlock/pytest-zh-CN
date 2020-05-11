@@ -48,7 +48,7 @@
 
 * #### [pytest fixture：易于理解的, 模块化, 可拓展](https://docs.pytest.org/en/latest/fixture.html)
     * [将fixture作为函数参数](https://docs.pytest.org/en/latest/fixture.html#fixtures-as-function-arguments)
-    * [fixture:依赖注入的一个主要例子](https://docs.pytest.org/en/latest/fixture.html#fixtures-a-prime-example-of-dependency-injection)
+    * [fixture:依赖注入的一个典型例子](https://docs.pytest.org/en/latest/fixture.html#fixtures-a-prime-example-of-dependency-injection)
     * [conftest.py:共享fixture函数](https://docs.pytest.org/en/latest/fixture.html#conftest-py-sharing-fixture-functions)
     * [共享测试数据](https://docs.pytest.org/en/latest/fixture.html#sharing-test-data)
     * [范围：在类，模块或会话中的测试之间共享fixture实例](https://docs.pytest.org/en/latest/fixture.html#scope-sharing-a-fixture-instance-across-tests-in-a-class-module-or-session)
