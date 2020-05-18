@@ -64,9 +64,9 @@
     * [自动使用fixtures(xUnit setup on steroids)](https://github.com/CHSherlock/pytest-zh-CN/blob/master/pytest%20fixture%EF%BC%9A%E6%98%93%E4%BA%8E%E7%90%86%E8%A7%A3%E7%9A%84%2C%20%E6%A8%A1%E5%9D%97%E5%8C%96%2C%20%E5%8F%AF%E6%8B%93%E5%B1%95.md#conftest-py%E5%85%B1%E4%BA%ABfixture%E5%87%BD%E6%95%B0)
     * [覆盖各个级别的fixture](https://github.com/CHSherlock/pytest-zh-CN/blob/master/pytest%20fixture%EF%BC%9A%E6%98%93%E4%BA%8E%E7%90%86%E8%A7%A3%E7%9A%84%2C%20%E6%A8%A1%E5%9D%97%E5%8C%96%2C%20%E5%8F%AF%E6%8B%93%E5%B1%95.md#conftest-py%E5%85%B1%E4%BA%ABfixture%E5%87%BD%E6%95%B0)
 
-* #### [使用属性标记测试函数](https://docs.pytest.org/en/latest/mark.html)
-    * [注册标记](https://docs.pytest.org/en/latest/mark.html#registering-marks)
-    * [在未知标记上引发错误](https://docs.pytest.org/en/latest/mark.html#raising-errors-on-unknown-marks)
+* #### [使用属性标记测试函数](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E4%BD%BF%E7%94%A8%E5%B1%9E%E6%80%A7%E6%A0%87%E8%AE%B0%E6%B5%8B%E8%AF%95%E5%87%BD%E6%95%B0.md)
+    * [注册标记](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E4%BD%BF%E7%94%A8%E5%B1%9E%E6%80%A7%E6%A0%87%E8%AE%B0%E6%B5%8B%E8%AF%95%E5%87%BD%E6%95%B0.md#%E6%B3%A8%E5%86%8C%E6%A0%87%E8%AE%B0)
+    * [在未知标记上引发错误](https://github.com/CHSherlock/pytest-zh-CN/blob/master/%E4%BD%BF%E7%94%A8%E5%B1%9E%E6%80%A7%E6%A0%87%E8%AE%B0%E6%B5%8B%E8%AF%95%E5%87%BD%E6%95%B0.md#%E5%9C%A8%E6%9C%AA%E7%9F%A5%E6%A0%87%E8%AE%B0%E4%B8%8A%E5%BC%95%E5%8F%91%E9%94%99%E8%AF%AF)
 
 * #### [猴子补丁/模拟模块和环境](https://docs.pytest.org/en/latest/monkeypatch.html)
     * [简单示例:猴子补丁函数](https://docs.pytest.org/en/latest/monkeypatch.html#simple-example-monkeypatching-functions)
