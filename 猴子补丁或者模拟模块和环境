@@ -1,0 +1,339 @@
+有时测试需要调用依赖于全局设置的功能，或者调用无法轻松测试的代码(如网络访问)的功能。`Monkeypatch`fixture可帮助您安全地设置/删除属性，字典项或环境变量，或修改`sys.path`进行导入。
+
+`monkeypatch` fixture提供了这些辅助方法，用于在测试中安全地修补和模拟功能:
+
+    monkeypatch.setattr(obj, name, value, raising=True)
+    monkeypatch.delattr(obj, name, raising=True)
+    monkeypatch.setitem(mapping, name, value)
+    monkeypatch.delitem(obj, name, raising=True)
+    monkeypatch.setenv(name, value, prepend=False)
+    monkeypatch.delenv(name, raising=True)
+    monkeypatch.syspath_prepend(path)
+    monkeypatch.chdir(path)
+
+所有修改将在请求的测试函数或fixture完成后撤消。如果设置/删除操作的目标不存在，则`raising`参数决定是否将引发`KeyError`或`AttributeError`。
+
+考虑以下情况:
+
+1. 修改测试的函数行为或类的属性，例如您不会进行测试的API调用或数据库连接，但是您知道预期的输出是什么。使用monkeypatch.setattr()将函数或属性打上您想要的测试行为的补丁。这可以包括您自己的函数。使用monkeypatch.delattr()删除用于测试的函数或属性。
+2. 修改字典的值，例如，您有一个全局配置，您想为某些测试用例修改它。使用monkeypatch.setitem()修补测试字典。 monkeypatch.delitem()可用于删除项目。
+3. 修改测试的环境变量，例如在缺少环境变量的情况下测试程序的行为，或为已知变量设置多个值。monkeypatch.setenv()和monkeypatch.delenv()可以用于这些补丁。
+4. 使用`monkeypatch.setenv("PATH", value, prepend=os.pathsep)`去修改`$PATH`，和monkeypatch.chdir()以在测试期间更改当前工作目录的上下文。
+5. 使用monkeypatch.syspath_prepend（）修改`sys.path`，它还将调用pkg_resources.fixup_namespace_packages()和importlib.invalidate_caches()。
+
+请参阅[monkeypatch博客文章](http://tetamap.wordpress.com/2009/03/03/monkeypatching-in-unit-tests-done-right/)以获取一些入门材料及其动机的讨论。
+
+#### 简单示例:猴子补丁函数
+
+考虑一个使用用户目录的场景。在测试上下文中，您不希望您的测试依赖于正在运行的用户。`monkeypatch`可用于依赖于用户的补丁函数，以始终返回特定的值。
+
+在本例中，monkeypatch.setattr()用于修补`Path.home`，以便在运行测试时始终使用已知的测试路径`path(“/abc”)`。这消除了出于测试目的对运行用户的任何依赖。setattr()必须在调用将使用修补函数的函数之前调用。测试函数完成后，将撤消`Path.home`修改。
+
+    # contents of test_module.py with source code and the test
+    from pathlib import Path
+    
+
+    def getssh():
+        """Simple function to return expanded homedir ssh path."""
+        return Path.home() / ".ssh"
+    
+
+    def test_getssh(monkeypatch):
+        # mocked return function to replace Path.home
+        # always return '/abc'
+        def mockreturn():
+            return Path("/abc")
+
+        # Application of the monkeypatch to replace Path.home
+        # with the behavior of mockreturn defined above.
+        monkeypatch.setattr(Path, "home", mockreturn)
+
+        # Calling getssh() will use mockreturn in place of Path.home
+        # for this test with the monkeypatch.
+        x = getssh()
+        assert x == Path("/abc/.ssh")
+
+#### 猴子补丁返回的对象：构建模拟类
+
+monkeypatch.setattr()可以与类结合使用，以模拟从函数而不是值返回的对象。想象一个简单的函数获取一个API url并返回json响应。
+
+    # contents of app.py, a simple API retrieval example
+    import requests
+    
+
+    def get_json(url):
+        """Takes a URL, and returns the JSON."""
+        r = requests.get(url)
+        return r.json()
+
+出于测试目的，我们需要模拟返回的响应对象`r`。`r`的mock需要一个`.json()`方法，该方法返回一个字典。这可以在我们的测试文件中通过定义一个类来表示`r`来完成。
+
+    # contents of test_app.py, a simple test for our API retrieval
+    # import requests for the purposes of monkeypatching
+    import requests
+
+    # our app.py that includes the get_json() function
+    # this is the previous code block example
+    import app
+
+    # custom class to be the mock return value
+    # will override the requests.Response returned from requests.get
+    class MockResponse:
+
+        # mock json() method always returns a specific testing dictionary
+        @staticmethod
+        def json():
+            return {"mock_key": "mock_response"}
+    
+
+    def test_get_json(monkeypatch):
+
+        # Any arguments may be passed and mock_get() will always return our
+        # mocked object, which only has the .json() method.
+        def mock_get(*args, **kwargs):
+            return MockResponse()
+
+        # apply the monkeypatch for requests.get to mock_get
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        # app.get_json, which contains requests.get, uses the monkeypatch
+        result = app.get_json("https://fakeurl")
+        assert result["mock_key"] == "mock_response"
+
+`monkeypatch`通过我们的`mock_get`函数将模拟应用于`request.get`。`mock_get`函数返回`MockResponse`类的一个实例，该类定义了一个`json()`方法来返回已知的测试字典，并且不需要任何外部API连接。
+
+您可以为正在测试的场景构建具有适当复杂度的`MockResponse`类。例如，它可以包含一个总是返回`True`的`ok`属性，或者根据输入字符串从`json()`模拟方法返回不同的值。
+
+可以使用`fixture`在测试之间共享这个mock:
+
+    # contents of test_app.py, a simple test for our API retrieval
+    import pytest
+    import requests
+
+    # app.py that includes the get_json() function
+    import app
+
+    # custom class to be the mock return value of requests.get()
+    class MockResponse:
+        @staticmethod
+        def json():
+            return {"mock_key": "mock_response"}
+    
+
+    # monkeypatched requests.get moved to a fixture
+    @pytest.fixture
+    def mock_response(monkeypatch):
+        """Requests.get() mocked to return {'mock_key':'mock_response'}."""
+
+        def mock_get(*args, **kwargs):
+            return MockResponse()
+
+        monkeypatch.setattr(requests, "get", mock_get)
+    
+
+    # notice our test uses the custom fixture instead of monkeypatch directly
+    def test_get_json(mock_response):
+        result = app.get_json("https://fakeurl")
+        assert result["mock_key"] == "mock_response"
+
+此外，如果将mock设计为应用于所有测试，则可以将`fixture`移动到`conftest.py`文件中，并使用with `autouse=True`选项。
+
+#### 全局补丁示例:防止"requests"从远程操作
+
+如果你想要阻止“请求”库在你的所有测试中执行http请求，你可以这样做:
+
+    # contents of conftest.py
+    import pytest
+    
+    
+    @pytest.fixture(autouse=True)
+    def no_requests(monkeypatch):
+        """Remove requests.sessions.Session.request for all tests."""
+        monkeypatch.delattr("requests.sessions.Session.request")
+
+这个autouse fixture将为每个测试函数执行，它将删除方法`request.session.Session.request`，以便在测试中创建http请求的任何尝试都将失败。
+
+><font size=5>注意：</font>  
+建议不要给内置函数打补丁，比如打开、编译等。因为它可能会破坏pytest的内部结构。如果这是不可避免的，那么传递--tb=native，--assert=plain和--capture=no可能会有所帮助，尽管没有保证。
+
+><font size=5>注意：</font>  
+注意，修补stdlib函数和pytest使用的一些第三方库可能会破坏pytest本身，因此在这些情况下，建议使用[MonkeyPatch.context()](https://docs.pytest.org/en/latest/reference.html#_pytest.monkeypatch.MonkeyPatch.context)来限制修补到你想要测试的块: 
+>
+>&nbsp; &nbsp; import functools
+>
+>
+>&nbsp; &nbsp; def test_partial(monkeypatch):  
+>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; with monkeypatch.context() as m:  
+>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; m.setattr(functools, "partial", 3)  
+>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; assert functools.partial == 3  
+>
+>有关详细信息，请参见问题[#3290](https://github.com/pytest-dev/pytest/issues/3290)。
+
+#### 猴子补丁环境变量
+
+如果您正在使用环境变量，则通常需要安全地更改值或出于测试目的将其从系统中删除。`monkeypatch`提供了一种使用`setenv`和`delenv`方法实现这一点的机制。我们的测试示例代码:
+
+    # contents of our original code file e.g. code.py
+    import os
+    
+
+    def get_os_user_lower():
+        """Simple retrieval function.
+        Returns lowercase USER or raises OSError."""
+        username = os.getenv("USER")
+
+        if username is None:
+            raise OSError("USER environment is not set.")
+
+        return username.lower()
+
+有两条可能的路径。第一，将`USER`环境变量设置为一个值。第二，用户环境变量不存在。使用`monkeypatch`可以安全地测试这两条路径，而不会影响运行环境：
+
+    # contents of our test file e.g. test_code.py
+    import pytest
+    
+
+    def test_upper_to_lower(monkeypatch):
+        """Set the USER env var to assert the behavior."""
+        monkeypatch.setenv("USER", "TestingUser")
+        assert get_os_user_lower() == "testinguser"
+    
+
+    def test_raise_exception(monkeypatch):
+        """Remove the USER env var and assert OSError is raised."""
+        monkeypatch.delenv("USER", raising=False)
+
+        with pytest.raises(OSError):
+            _ = get_os_user_lower()
+
+此行为可以移动到fixture结构中，并在测试之间共享:
+
+    # contents of our test file e.g. test_code.py
+    import pytest
+    
+
+    @pytest.fixture
+    def mock_env_user(monkeypatch):
+        monkeypatch.setenv("USER", "TestingUser")
+    
+
+    @pytest.fixture
+    def mock_env_missing(monkeypatch):
+        monkeypatch.delenv("USER", raising=False)
+    
+
+    # notice the tests reference the fixtures for mocks
+    def test_upper_to_lower(mock_env_user):
+        assert get_os_user_lower() == "testinguser"
+    
+
+    def test_raise_exception(mock_env_missing):
+        with pytest.raises(OSError):
+            _ = get_os_user_lower()
+
+#### 猴子补丁字典
+
+可以使用monkeypatch.setitem()在测试期间安全地将字典的值设置为特定的值。以这个简化的连接字符串为例:
+
+    # contents of app.py to generate a simple connection string
+    DEFAULT_CONFIG = {"user": "user1", "database": "db1"}
+    
+
+    def create_connection_string(config=None):
+        """Creates a connection string from input or defaults."""
+        config = config or DEFAULT_CONFIG
+        return f"User Id={config['user']}; Location={config['database']};"
+
+出于测试目的，我们可以将`DEFAULT_CONFIG`字典打补丁到特定的值。
+
+    # contents of test_app.py
+    # app.py with the connection string function (prior code block)
+    import app
+    
+    
+    def test_connection(monkeypatch):
+    
+        # Patch the values of DEFAULT_CONFIG to specific
+        # testing values only for this test.
+        monkeypatch.setitem(app.DEFAULT_CONFIG, "user", "test_user")
+        monkeypatch.setitem(app.DEFAULT_CONFIG, "database", "test_db")
+    
+        # expected result based on the mocks
+        expected = "User Id=test_user; Location=test_db;"
+    
+        # the test uses the monkeypatched dictionary settings
+        result = app.create_connection_string()
+        assert result == expected
+
+您可以使用monkeypatch.delitem()删除值。
+
+    # contents of test_app.py
+    import pytest
+    
+    # app.py with the connection string function
+    import app
+    
+    
+    def test_missing_user(monkeypatch):
+    
+        # patch the DEFAULT_CONFIG t be missing the 'user' key
+        monkeypatch.delitem(app.DEFAULT_CONFIG, "user", raising=False)
+    
+        # Key error expected because a config is not passed, and the
+        # default is now missing the 'user' entry.
+        with pytest.raises(KeyError):
+            _ = app.create_connection_string()
+
+fixture的模块化使您可以灵活地为每个潜在的mock定义单独的fixture，并在需要的测试中引用它们。
+
+    # contents of test_app.py
+    import pytest
+    
+    # app.py with the connection string function
+    import app
+    
+    # all of the mocks are moved into separated fixtures
+    @pytest.fixture
+    def mock_test_user(monkeypatch):
+        """Set the DEFAULT_CONFIG user to test_user."""
+        monkeypatch.setitem(app.DEFAULT_CONFIG, "user", "test_user")
+    
+    
+    @pytest.fixture
+    def mock_test_database(monkeypatch):
+        """Set the DEFAULT_CONFIG database to test_db."""
+        monkeypatch.setitem(app.DEFAULT_CONFIG, "database", "test_db")
+    
+    
+    @pytest.fixture
+    def mock_missing_default_user(monkeypatch):
+        """Remove the user key from DEFAULT_CONFIG"""
+        monkeypatch.delitem(app.DEFAULT_CONFIG, "user", raising=False)
+    
+    
+    # tests reference only the fixture mocks that are needed
+    def test_connection(mock_test_user, mock_test_database):
+    
+        expected = "User Id=test_user; Location=test_db;"
+    
+        result = app.create_connection_string()
+        assert result == expected
+    
+    
+    def test_missing_user(mock_missing_default_user):
+    
+        with pytest.raises(KeyError):
+            _ = app.create_connection_string()
+
+#### API参考资料
+
+参考 [MonkeyPatch](https://docs.pytest.org/en/latest/reference.html#_pytest.monkeypatch.MonkeyPatch) 类的文档。
+
+
+
+
+
+
+
+
+
